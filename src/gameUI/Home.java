@@ -25,6 +25,15 @@ public class Home extends JFrame {
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.insets = new Insets(10, 0, 10, 0);
 
+		// Start playing background music
+		try {
+			AudioManager.getInstance().playBackgroundMusic("/audio/background_music.wav");
+			AudioManager.getInstance().setVolume(0.05f); // Set volume to 5%
+		} catch (Exception e) {
+			System.err.println("Failed to play background music: " + e.getMessage());
+			e.printStackTrace();
+		}
+
 		HomePageButtons startButton = new HomePageButtons("/icons/start.png", 200, 60, e -> {
 			// Show player setup dialog
 			PlayerSetupDialog setupDialog = new PlayerSetupDialog(Home.this, 2, 4);
@@ -34,7 +43,7 @@ public class Home extends JFrame {
 				List<String> playerNames = setupDialog.getPlayerNames();
 				Home.this.dispose();
 
-				// Start the game with the player names
+				// Start new game
 				Game.startNewGame(playerNames);
 			}
 		});
@@ -47,14 +56,14 @@ public class Home extends JFrame {
 		// Create help button
 		HomePageButtons helpButton = new HomePageButtons("/icons/help.png", 200, 60, e -> {
 			String helpMessage = "Super Madiao Game Rules:\n\n"
-					+ "1. Each player takes turns playing cards and declaring card points.\n\n"
+					+ "1. Each player takes turns playing cards and declaring points.\n\n"
 					+ "2. On your turn, you can:\n"
-					+ "   - Play 1-4 cards and declare their rank (can be truthful or bluffing)\n"
+					+ "   - Play 1-4 cards and declare their points (can be true or false)\n"
 					+ "   - Challenge the previous player's declaration\n\n"
 					+ "3. If a player is challenged:\n"
-					+ "   - If the declaration was false, the challenged player takes all cards from the pile\n"
-					+ "   - If the declaration was true, the challenger takes all cards from the pile\n\n"
-					+ "4. The player who takes cards from a challenge goes next\n\n"
+					+ "   - If the declaration is false, the challenged player takes all cards from the pile\n"
+					+ "   - If the declaration is true, the challenger takes all cards from the pile\n\n"
+					+ "4. The player who takes cards goes next\n\n"
 					+ "5. The first player to empty their hand wins!";
 			JOptionPane.showMessageDialog(Home.this, helpMessage, "Game Help", JOptionPane.INFORMATION_MESSAGE);
 		});

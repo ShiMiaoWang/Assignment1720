@@ -39,6 +39,7 @@ public class HandPanel extends JPanel {
         setOpaque(false);
 
         cardComponents = new ArrayList<>();
+        componentToCardMap = new HashMap<>();
 
         // Create all card components
         for (ImageIcon icon : cardIcons) {
@@ -98,7 +99,45 @@ public class HandPanel extends JPanel {
             add(cardComponent);
         }
 
+        // Log debug info
+        System.out.println("HandPanel updated: " + cards.size() + " cards");
+
         revalidate();
         repaint();
+    }
+
+    // Verify card mappings match player's actual hand
+    public boolean verifyCardMappings(List<Card> playerHand) {
+        // Check if all components have valid card mappings
+        for (CardComponent component : cardComponents) {
+            Card modelCard = componentToCardMap.get(component);
+            if (modelCard == null) {
+                System.out.println("Warning: Component found without model card mapping");
+                return false;
+            }
+
+            if (!playerHand.contains(modelCard)) {
+                System.out.println("Warning: Component maps to card not in player's hand");
+                return false;
+            }
+        }
+
+        // Check if all player cards have corresponding components
+        for (Card card : playerHand) {
+            boolean found = false;
+            for (CardComponent component : cardComponents) {
+                if (card.equals(componentToCardMap.get(component))) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                System.out.println("Warning: Player has card without UI component");
+                return false;
+            }
+        }
+
+        return true;
     }
 }

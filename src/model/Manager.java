@@ -49,6 +49,20 @@ public class Manager {
 
 		// Check if player has these cards
 		if (!player.getHand().containsAll(cards)) {
+			// Add debug info about the cards for troubleshooting
+			StringBuilder playerCards = new StringBuilder("Player cards: ");
+			for (Card c : player.getHand()) {
+				playerCards.append(c.getRank()).append(" of ").append(c.getSuit()).append(", ");
+			}
+
+			StringBuilder attemptedCards = new StringBuilder("Attempted cards: ");
+			for (Card c : cards) {
+				attemptedCards.append(c.getRank()).append(" of ").append(c.getSuit()).append(", ");
+			}
+
+			System.out.println(playerCards.toString());
+			System.out.println(attemptedCards.toString());
+
 			throw new IllegalArgumentException("You don't have these cards!");
 		}
 

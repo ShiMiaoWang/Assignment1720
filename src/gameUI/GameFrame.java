@@ -9,6 +9,8 @@ import model.Player;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class GameFrame extends JFrame {
 
@@ -119,7 +121,23 @@ public class GameFrame extends JFrame {
             return;
         }
 
-        // Get declared rank from rank selector (now a class field)
+        // Get current player
+        Player currentPlayer = gameManager.getCurrentPlayer();
+        String currentPlayerName = currentPlayer.getName();
+
+        // Add debug logging
+        System.out.println("Selected cards: " + selectedCards.size());
+        System.out.println("Player hand: " + currentPlayer.getHand().size());
+
+        // Verify mappings consistency
+        boolean mappingsValid = handPanel.verifyCardMappings(currentPlayer.getHand());
+        if (!mappingsValid) {
+            JOptionPane.showMessageDialog(this, "UI and game data out of sync. Refreshing display.");
+            updatePlayerHand(); // Refresh hand display
+            return;
+        }
+
+        // Get declared rank from rank selector
         Card.Rank declaredRank = rankSelector.getSelectedRank();
 
         try {
@@ -133,8 +151,12 @@ public class GameFrame extends JFrame {
             handPanel.removeCards(selectedComponents);
 
             // Update player info (turns have changed)
-            Player currentPlayer = gameManager.getCurrentPlayer();
-            updatePlayerInfo(currentPlayer.getName(), currentPlayer.getHand().size());
+            Player newCurrentPlayer = gameManager.getCurrentPlayer();
+            String newPlayerName = newCurrentPlayer.getName();
+            updatePlayerInfo(newPlayerName, newCurrentPlayer.getHand().size());
+
+            // Automatically handle turn change
+            autoHandleTurnChange(currentPlayerName, newPlayerName);
 
             // Check for winner
             Player winner = gameManager.checkForWinner();
@@ -144,7 +166,66 @@ public class GameFrame extends JFrame {
             }
         } catch (IllegalArgumentException | IllegalStateException e) {
             JOptionPane.showMessageDialog(this, e.getMessage());
+            // Refresh UI after error
+            updatePlayerHand();
         }
+    }
+
+    // Automatically handle turn change with overlay notification
+    private void autoHandleTurnChange(String currentPlayerName, String nextPlayerName) {
+        // Create a semi-transparent overlay panel for the turn notification
+        JPanel overlayPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                // Make the background semi-transparent
+                g.setColor(new Color(0, 0, 0, 180));
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+
+        overlayPanel.setLayout(new GridBagLayout());
+
+        // Create a panel with the turn message
+        JPanel messagePanel = new JPanel(new BorderLayout());
+        messagePanel.setBackground(new Color(59, 89, 152));
+        messagePanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+
+        // Add title
+        JLabel titleLabel = new JLabel("Turn Round!", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setForeground(Color.WHITE);
+        messagePanel.add(titleLabel, BorderLayout.NORTH);
+
+        // Add message
+        JLabel messageLabel = new JLabel(currentPlayerName + " has played. It's " + nextPlayerName + "'s turn now!",
+                SwingConstants.CENTER);
+        messageLabel.setFont(new Font("Arial", Font.PLAIN, 18));
+        messageLabel.setForeground(Color.WHITE);
+        messageLabel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
+        messagePanel.add(messageLabel, BorderLayout.CENTER);
+
+        overlayPanel.add(messagePanel);
+
+        // Add the overlay to the glass pane of the frame
+        setGlassPane(overlayPanel);
+        overlayPanel.setVisible(true);
+
+        // Create a timer to remove the overlay and update the display after a delay
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                // Need to use SwingUtilities.invokeLater to modify UI from non-EDT thread
+                SwingUtilities.invokeLater(() -> {
+                    // Hide the overlay
+                    overlayPanel.setVisible(false);
+
+                    // Update the hand display for the new player
+                    updatePlayerHand();
+                });
+            }
+        }, 2000); // 2 second delay
     }
 
     // Handle challenge
@@ -156,10 +237,12 @@ public class GameFrame extends JFrame {
         }
 
         Player challenger = gameManager.getCurrentPlayer();
+        String challengerName = challenger.getName();
         Player lastPlayer = lastPlay.getPlayer();
 
         boolean challengeSuccessful = gameManager.challengePlayer(challenger);
 
+        StringBuilder message = new StringBuilder();
         if (challengeSuccessful) {
             // Determine the actual ranks of the cards
             StringBuilder actualRanks = new StringBuilder();
@@ -171,26 +254,31 @@ public class GameFrame extends JFrame {
                 actualRanks.append(playedCards.get(i).getRank());
             }
 
-            JOptionPane.showMessageDialog(this,
-                    "Challenge successful! " + lastPlayer.getName() + " takes all cards.\n" +
-                            "The cards were " + actualRanks + " but declared as " +
-                            lastPlay.getDeclaredRank() + ".");
+            message.append("Challenge successful! ").append(lastPlayer.getName())
+                    .append(" takes all cards.\nThe cards were ").append(actualRanks)
+                    .append(" but declared as ").append(lastPlay.getDeclaredRank()).append(".");
         } else {
-            JOptionPane.showMessageDialog(this,
-                    "Challenge failed! " + challenger.getName() + " takes all cards.\n" +
-                            "The cards were indeed " + lastPlay.getDeclaredRank() + "'s.");
+            message.append("Challenge failed! ").append(challenger.getName())
+                    .append(" takes all cards.\nThe cards were indeed ")
+                    .append(lastPlay.getDeclaredRank()).append("'s.");
         }
+
+        // Show the challenge result
+        JOptionPane.showMessageDialog(this, message.toString());
 
         // Update UI
         updatePlayArea();
-        updatePlayerHand();
 
         // Update round number
         updateRound(gameManager.getRoundNumber());
 
         // Update player info
         Player currentPlayer = gameManager.getCurrentPlayer();
-        updatePlayerInfo(currentPlayer.getName(), currentPlayer.getHand().size());
+        String newPlayerName = currentPlayer.getName();
+        updatePlayerInfo(newPlayerName, currentPlayer.getHand().size());
+
+        // Automatically handle turn change
+        autoHandleTurnChange(challengerName, newPlayerName);
 
         // Check for winner
         Player winner = gameManager.checkForWinner();
@@ -247,9 +335,11 @@ public class GameFrame extends JFrame {
         JPanel bottomPanel = (JPanel) getContentPane().getComponent(4); // Bottom panel is at index 4 in BorderLayout
         JScrollPane handScrollPane = (JScrollPane) bottomPanel.getComponent(0); // Hand is the first component
 
-        // Create a new hand panel
+        // Get current player
         Player currentPlayer = gameManager.getCurrentPlayer();
         CardImageManager imageManager = CardImageManager.getInstance();
+
+        // Create a new hand panel
         handPanel = new HandPanel(currentPlayer.getHand(), imageManager.getAllSuitImages());
 
         // Update the scroll pane
@@ -258,6 +348,8 @@ public class GameFrame extends JFrame {
         // Refresh the UI
         handScrollPane.revalidate();
         handScrollPane.repaint();
+
+        System.out.println("Player hand UI refreshed");
     }
 
     private JPanel createPlaceholderPanel(String text) {

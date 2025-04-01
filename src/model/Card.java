@@ -71,4 +71,20 @@ public class Card {
 			return "Facedown Card";
 		}
 	}
+
+	// Add equals method for proper comparison
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null || getClass() != obj.getClass()) return false;
+
+		Card other = (Card) obj;
+		return this.suit == other.suit && this.rank == other.rank;
+	}
+
+	// Add hashCode method to maintain consistency with equals
+	@Override
+	public int hashCode() {
+		return 31 * suit.hashCode() + rank.hashCode();
+	}
 }

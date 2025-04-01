@@ -1,5 +1,6 @@
 package main;
 
+import gameUI.AudioManager;
 import gameUI.GameFrame;
 import gameUI.Home;
 import model.Manager;
@@ -23,8 +24,17 @@ public class Game {
         // Create game manager
         gameManager = new Manager(players);
 
-        // Create game interface and pass the manager
+        // Create game interface and pass manager
         gameFrame = new GameFrame(gameManager);
+
+        // Continue playing background music, start if not already playing
+        try {
+            AudioManager.getInstance().playBackgroundMusic("/audio/background_music.wav");
+            AudioManager.getInstance().setVolume(0.05f); // Set volume to 5%
+        } catch (Exception e) {
+            System.err.println("Failed to play background music: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         // Update UI display
         updateUI();
@@ -40,13 +50,13 @@ public class Game {
         gameFrame.updateRound(gameManager.getRoundNumber());
     }
 
-    // Start a new game with the specified player names
+    // Start a new game with specified player names
     public static void startNewGame(List<String> playerNames) {
         new Game(playerNames);
     }
 
     public static void main(String[] args) {
-        // Just show the home screen, game starts from there
+        // Show home page
         new Home();
     }
 }
