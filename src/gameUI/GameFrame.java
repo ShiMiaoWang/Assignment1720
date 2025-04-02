@@ -8,18 +8,24 @@ import model.Player;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
+/**
+ * Main game window
+ */
 public class GameFrame extends JFrame {
-
+    // Game UI components
     private InfoPanel infoPanel;         // Information panel
     private HandPanel handPanel;         // Hand panel
     private JPanel playAreaPanel;        // Play area
     private Manager gameManager;         // Game manager
     private RankSelector rankSelector;   // Rank selector
 
+    /**
+     * Create the game window
+     * @param manager Game manager
+     */
     public GameFrame(Manager manager) {
         // Store game manager reference
         this.gameManager = manager;
@@ -28,44 +34,61 @@ public class GameFrame extends JFrame {
         setTitle("SuperMadiao!");
         setSize(1152, 864);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setLocationRelativeTo(null);  // Center on screen
 
         // Create main panel
-        JPanel mainPanel = new JPanel(new BorderLayout());
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
         mainPanel.setBackground(new Color(34, 45, 65));
 
-        // Info Panel (Top)
+        // Add Info Panel (Top)
         infoPanel = new InfoPanel();
         mainPanel.add(infoPanel, BorderLayout.NORTH);
 
-        // Play Area (Center)
-        playAreaPanel = new JPanel(new FlowLayout());
+        // Add Play Area (Center)
+        playAreaPanel = new JPanel();
+        playAreaPanel.setLayout(new FlowLayout());
         playAreaPanel.setPreferredSize(new Dimension(400, 200));
         playAreaPanel.setBackground(new Color(55, 66, 88));
         mainPanel.add(playAreaPanel, BorderLayout.CENTER);
 
-        // Deck (Right)
+        // Add Deck Panel (Right)
         JPanel deckPanel = createPlaceholderPanel("Deck");
         mainPanel.add(deckPanel, BorderLayout.EAST);
 
-        // Declaration Area (Left)
-        rankSelector = new RankSelector();
-        JPanel declarationPanel = new JPanel(new BorderLayout());
+        // Add Declaration Area (Left)
+        JPanel declarationPanel = new JPanel();
+        declarationPanel.setLayout(new BorderLayout());
         declarationPanel.setBackground(new Color(55, 66, 88));
-        declarationPanel.add(new JLabel("Declaration Area", SwingConstants.CENTER) {{
-            setFont(new Font("Arial", Font.BOLD, 20));
-            setForeground(Color.WHITE);
-        }}, BorderLayout.NORTH);
+
+        // Add title to declaration panel
+        JLabel declarationTitle = new JLabel("Declaration Area");
+        declarationTitle.setHorizontalAlignment(SwingConstants.CENTER);
+        declarationTitle.setFont(new Font("Arial", Font.BOLD, 20));
+        declarationTitle.setForeground(Color.WHITE);
+        declarationPanel.add(declarationTitle, BorderLayout.NORTH);
+
+        // Create and add rank selector
+        rankSelector = new RankSelector();
         declarationPanel.add(rankSelector, BorderLayout.CENTER);
+
+        // Add declaration panel to main panel
         mainPanel.add(declarationPanel, BorderLayout.WEST);
 
-        // Bottom Panel (Hand and buttons)
-        JPanel bottomPanel = new JPanel(new BorderLayout());
+        // Create Bottom Panel (Hand and buttons)
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setLayout(new BorderLayout());
 
-        // Player Hand (Top of bottom panel)
+        // Add Player Hand (Top of bottom panel)
         Player currentPlayer = gameManager.getCurrentPlayer();
         CardImageManager imageManager = CardImageManager.getInstance();
-        handPanel = new HandPanel(currentPlayer.getHand(), imageManager.getAllSuitImages());
+
+        // Create hand panel with player's cards
+        Card[] playerCards = currentPlayer.getHand();
+        ImageIcon[] suitImages = imageManager.getAllSuitImages();
+        handPanel = new HandPanel(playerCards, suitImages);
+
+        // Put hand panel in a scroll pane
         JScrollPane handScrollPane = new JScrollPane(handPanel);
         handScrollPane.setPreferredSize(new Dimension(400, 120));
         handScrollPane.setOpaque(false);
@@ -73,64 +96,75 @@ public class GameFrame extends JFrame {
         handScrollPane.setBorder(null);
         bottomPanel.add(handScrollPane, BorderLayout.NORTH);
 
-        // Buttons Panel (Bottom of bottom panel)
-        JPanel buttonPanel = new JPanel(new FlowLayout());
+        // Add Buttons Panel (Bottom of bottom panel)
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout());
 
+        // Create Challenge button
         JButton challengeBtn = new JButton("Challenge");
         challengeBtn.setFont(new Font("Arial", Font.BOLD, 18));
-        challengeBtn.addActionListener(e -> handleChallenge());
+        ChallengeButtonListener challengeListener = new ChallengeButtonListener();
+        challengeBtn.addActionListener(challengeListener);
         buttonPanel.add(challengeBtn);
 
+        // Create Play button
         JButton playBtn = new JButton("Play Selected Cards");
         playBtn.setFont(new Font("Arial", Font.BOLD, 18));
-        playBtn.addActionListener(e -> handlePlayCards());
+        PlayButtonListener playListener = new PlayButtonListener();
+        playBtn.addActionListener(playListener);
         buttonPanel.add(playBtn);
 
+        // Create New Game button
         JButton newGameBtn = new JButton("New Game");
         newGameBtn.setFont(new Font("Arial", Font.BOLD, 18));
-        newGameBtn.addActionListener(e -> {
-            int option = JOptionPane.showConfirmDialog(this,
-                    "Are you sure you want to start a new game?",
-                    "New Game", JOptionPane.YES_NO_OPTION);
-            if (option == JOptionPane.YES_OPTION) {
-                dispose();
-                new Home();
-            }
-        });
+        NewGameButtonListener newGameListener = new NewGameButtonListener();
+        newGameBtn.addActionListener(newGameListener);
         buttonPanel.add(newGameBtn);
 
+        // Add button panel to bottom panel
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add bottom panel to main panel
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
+        // Set the content pane
         setContentPane(mainPanel);
+
+        // Show the window
         setVisible(true);
     }
 
-    // Handle card play
+    /**
+     * Handle playing cards
+     */
     private void handlePlayCards() {
-        List<CardComponent> selectedComponents = handPanel.getSelectedCards();
-        if (selectedComponents.isEmpty()) {
+        // Get selected card components
+        CardComponent[] selectedComponents = handPanel.getSelectedCards();
+
+        // Check if any cards are selected
+        if (selectedComponents.length == 0) {
             JOptionPane.showMessageDialog(this, "Please select at least one card to play.");
             return;
         }
 
-        // Get the selected cards from the hand panel
-        List<Card> selectedCards = handPanel.getSelectedModelCards();
-        if (selectedCards.isEmpty()) {
+        // Get the selected model cards
+        Card[] selectedCards = handPanel.getSelectedModelCards();
+        if (selectedCards.length == 0) {
             JOptionPane.showMessageDialog(this, "Error retrieving card data.");
             return;
         }
 
-        // Get current player
+        // Get current player info
         Player currentPlayer = gameManager.getCurrentPlayer();
         String currentPlayerName = currentPlayer.getName();
 
         // Add debug logging
-        System.out.println("Selected cards: " + selectedCards.size());
-        System.out.println("Player hand: " + currentPlayer.getHand().size());
+        System.out.println("Selected cards: " + selectedCards.length);
+        System.out.println("Player hand: " + currentPlayer.getCardCount());
 
         // Verify mappings consistency
-        boolean mappingsValid = handPanel.verifyCardMappings(currentPlayer.getHand());
+        Card[] playerHand = currentPlayer.getHand();
+        boolean mappingsValid = handPanel.verifyCardMappings(playerHand);
         if (!mappingsValid) {
             JOptionPane.showMessageDialog(this, "UI and game data out of sync. Refreshing display.");
             updatePlayerHand(); // Refresh hand display
@@ -142,7 +176,7 @@ public class GameFrame extends JFrame {
 
         try {
             // Play the cards
-            gameManager.playCards(gameManager.getCurrentPlayer(), selectedCards, declaredRank);
+            gameManager.playCards(currentPlayer, selectedCards, declaredRank);
 
             // Update play area display
             updatePlayArea();
@@ -153,7 +187,8 @@ public class GameFrame extends JFrame {
             // Update player info (turns have changed)
             Player newCurrentPlayer = gameManager.getCurrentPlayer();
             String newPlayerName = newCurrentPlayer.getName();
-            updatePlayerInfo(newPlayerName, newCurrentPlayer.getHand().size());
+            int newPlayerCardCount = newCurrentPlayer.getCardCount();
+            updatePlayerInfo(newPlayerName, newPlayerCardCount);
 
             // Automatically handle turn change
             autoHandleTurnChange(currentPlayerName, newPlayerName);
@@ -161,121 +196,88 @@ public class GameFrame extends JFrame {
             // Check for winner
             Player winner = gameManager.checkForWinner();
             if (winner != null) {
-                JOptionPane.showMessageDialog(this, winner.getName() + " wins the game!");
+                String winMessage = winner.getName() + " wins the game!";
+                JOptionPane.showMessageDialog(this, winMessage);
                 // Handle game end
             }
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (Exception e) {
+            // Show error message
             JOptionPane.showMessageDialog(this, e.getMessage());
+
             // Refresh UI after error
             updatePlayerHand();
         }
     }
 
-    // Automatically handle turn change with overlay notification
+    /**
+     * Display turn change notification and update UI
+     */
     private void autoHandleTurnChange(String currentPlayerName, String nextPlayerName) {
-        // Create a semi-transparent overlay panel for the turn notification
-        JPanel overlayPanel = new JPanel() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                // Make the background semi-transparent
-                g.setColor(new Color(0, 0, 0, 180));
-                g.fillRect(0, 0, getWidth(), getHeight());
-            }
-        };
+        // Create message to display
+        String message = currentPlayerName + " has played. It's " + nextPlayerName + "'s turn now!";
 
-        overlayPanel.setLayout(new GridBagLayout());
+        // Show dialog to user
+        String title = "Turn Round!";
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.INFORMATION_MESSAGE);
 
-        // Create a panel with the turn message
-        JPanel messagePanel = new JPanel(new BorderLayout());
-        messagePanel.setBackground(new Color(59, 89, 152));
-        messagePanel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
-
-        // Add title
-        JLabel titleLabel = new JLabel("Turn Round!", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setForeground(Color.WHITE);
-        messagePanel.add(titleLabel, BorderLayout.NORTH);
-
-        // Add message
-        JLabel messageLabel = new JLabel(currentPlayerName + " has played. It's " + nextPlayerName + "'s turn now!",
-                SwingConstants.CENTER);
-        messageLabel.setFont(new Font("Arial", Font.PLAIN, 18));
-        messageLabel.setForeground(Color.WHITE);
-        messageLabel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
-        messagePanel.add(messageLabel, BorderLayout.CENTER);
-
-        overlayPanel.add(messagePanel);
-
-        // Add the overlay to the glass pane of the frame
-        setGlassPane(overlayPanel);
-        overlayPanel.setVisible(true);
-
-        // Create a timer to remove the overlay and update the display after a delay
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                // Need to use SwingUtilities.invokeLater to modify UI from non-EDT thread
-                SwingUtilities.invokeLater(() -> {
-                    // Hide the overlay
-                    overlayPanel.setVisible(false);
-
-                    // Update the hand display for the new player
-                    updatePlayerHand();
-                });
-            }
-        }, 2000); // 2 second delay
+        // Update the hand display for the new player
+        updatePlayerHand();
     }
 
-    // Handle challenge
+    /**
+     * Handle challenge action
+     */
     private void handleChallenge() {
+        // Get the last play
         Play lastPlay = gameManager.getPile().getLastPlay();
+
+        // Check if there's a play to challenge
         if (lastPlay == null) {
             JOptionPane.showMessageDialog(this, "No cards to challenge!");
             return;
         }
 
+        // Get challenger and last player
         Player challenger = gameManager.getCurrentPlayer();
         String challengerName = challenger.getName();
         Player lastPlayer = lastPlay.getPlayer();
 
+        // Execute the challenge
         boolean challengeSuccessful = gameManager.challengePlayer(challenger);
 
-        StringBuilder message = new StringBuilder();
-        if (challengeSuccessful) {
-            // Determine the actual ranks of the cards
-            StringBuilder actualRanks = new StringBuilder();
-            List<Card> playedCards = lastPlay.getCards();
-            for (int i = 0; i < playedCards.size(); i++) {
-                if (i > 0) {
-                    actualRanks.append(", ");
-                }
-                actualRanks.append(playedCards.get(i).getRank());
-            }
+        // Create message to show result
+        String message;
 
-            message.append("Challenge successful! ").append(lastPlayer.getName())
-                    .append(" takes all cards.\nThe cards were ").append(actualRanks)
-                    .append(" but declared as ").append(lastPlay.getDeclaredRank()).append(".");
+        if (challengeSuccessful) {
+            // Challenge succeeded - determine actual card ranks
+            Card[] playedCards = lastPlay.getCards();
+            String actualRanks = getCardRanksText(playedCards);
+
+            message = "Challenge successful! " + lastPlayer.getName() +
+                    " takes all cards.\nThe cards were " + actualRanks +
+                    " but declared as " + lastPlay.getDeclaredRank() + ".";
         } else {
-            message.append("Challenge failed! ").append(challenger.getName())
-                    .append(" takes all cards.\nThe cards were indeed ")
-                    .append(lastPlay.getDeclaredRank()).append("'s.");
+            // Challenge failed
+            message = "Challenge failed! " + challenger.getName() +
+                    " takes all cards.\nThe cards were indeed " +
+                    lastPlay.getDeclaredRank() + "'s.";
         }
 
         // Show the challenge result
-        JOptionPane.showMessageDialog(this, message.toString());
+        JOptionPane.showMessageDialog(this, message);
 
         // Update UI
         updatePlayArea();
 
         // Update round number
-        updateRound(gameManager.getRoundNumber());
+        int roundNumber = gameManager.getRoundNumber();
+        updateRound(roundNumber);
 
         // Update player info
         Player currentPlayer = gameManager.getCurrentPlayer();
         String newPlayerName = currentPlayer.getName();
-        updatePlayerInfo(newPlayerName, currentPlayer.getHand().size());
+        int cardCount = currentPlayer.getCardCount();
+        updatePlayerInfo(newPlayerName, cardCount);
 
         // Automatically handle turn change
         autoHandleTurnChange(challengerName, newPlayerName);
@@ -283,16 +285,42 @@ public class GameFrame extends JFrame {
         // Check for winner
         Player winner = gameManager.checkForWinner();
         if (winner != null) {
-            JOptionPane.showMessageDialog(this, winner.getName() + " wins the game!");
+            String winMessage = winner.getName() + " wins the game!";
+            JOptionPane.showMessageDialog(this, winMessage);
             // Handle game end
         }
     }
 
-    // Update play area display
+    /**
+     * Get text showing all card ranks
+     */
+    private String getCardRanksText(Card[] cards) {
+        // Build string of card ranks
+        String result = "";
+
+        for (int i = 0; i < cards.length; i++) {
+            // Add separator if not first card
+            if (i > 0) {
+                result = result + ", ";
+            }
+
+            // Add this card's rank
+            result = result + cards[i].getRank();
+        }
+
+        return result;
+    }
+
+    /**
+     * Update play area display
+     */
     private void updatePlayArea() {
+        // Clear existing components
         playAreaPanel.removeAll();
 
+        // Get the last play
         Play lastPlay = gameManager.getPile().getLastPlay();
+
         if (lastPlay != null) {
             // Add a label to show the declared rank
             JLabel declaredRankLabel = new JLabel("Declared: " + lastPlay.getDeclaredRank());
@@ -302,45 +330,59 @@ public class GameFrame extends JFrame {
 
             // Add a separator
             JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
-            separator.setPreferredSize(new Dimension(playAreaPanel.getWidth() - 20, 2));
+            int separatorWidth = playAreaPanel.getWidth() - 20;
+            separator.setPreferredSize(new Dimension(separatorWidth, 2));
             playAreaPanel.add(separator);
 
-            // Add cards
-            for (Card card : lastPlay.getCards()) {
+            // Add each card
+            Card[] cards = lastPlay.getCards();
+            for (int i = 0; i < cards.length; i++) {
+                Card card = cards[i];
+
+                // Get image for this card's suit
                 CardImageManager imageManager = CardImageManager.getInstance();
                 ImageIcon icon = imageManager.getSuitImage(card.getSuit());
 
                 // Create a smaller version for the play area
-                Image scaledImage = icon.getImage().getScaledInstance(40, 60, Image.SCALE_SMOOTH);
+                Image originalImage = icon.getImage();
+                Image scaledImage = originalImage.getScaledInstance(40, 60, Image.SCALE_SMOOTH);
                 ImageIcon scaledIcon = new ImageIcon(scaledImage);
 
+                // Create label for this card
                 JLabel cardLabel = new JLabel(scaledIcon);
-                cardLabel.setToolTipText(card.getRank() + " of " + card.getSuit());
+                String tooltipText = card.getRank() + " of " + card.getSuit();
+                cardLabel.setToolTipText(tooltipText);
                 playAreaPanel.add(cardLabel);
             }
         } else {
+            // No cards played yet
             JLabel emptyLabel = new JLabel("No cards played yet");
             emptyLabel.setForeground(Color.WHITE);
             emptyLabel.setFont(new Font("Arial", Font.BOLD, 16));
             playAreaPanel.add(emptyLabel);
         }
 
+        // Refresh the panel
         playAreaPanel.revalidate();
         playAreaPanel.repaint();
     }
 
-    // Update player's hand display
+    /**
+     * Update player's hand display
+     */
     private void updatePlayerHand() {
         // Get the hand scroll pane from the bottom panel
-        JPanel bottomPanel = (JPanel) getContentPane().getComponent(4); // Bottom panel is at index 4 in BorderLayout
+        JPanel bottomPanel = (JPanel) getContentPane().getComponent(4); // Bottom panel is at index 4
         JScrollPane handScrollPane = (JScrollPane) bottomPanel.getComponent(0); // Hand is the first component
 
         // Get current player
         Player currentPlayer = gameManager.getCurrentPlayer();
         CardImageManager imageManager = CardImageManager.getInstance();
 
-        // Create a new hand panel
-        handPanel = new HandPanel(currentPlayer.getHand(), imageManager.getAllSuitImages());
+        // Create a new hand panel with player's cards
+        Card[] playerCards = currentPlayer.getHand();
+        ImageIcon[] suitImages = imageManager.getAllSuitImages();
+        handPanel = new HandPanel(playerCards, suitImages);
 
         // Update the scroll pane
         handScrollPane.setViewportView(handPanel);
@@ -352,25 +394,85 @@ public class GameFrame extends JFrame {
         System.out.println("Player hand UI refreshed");
     }
 
+    /**
+     * Create a placeholder panel with text
+     * @param text The text to display
+     * @return A styled panel
+     */
     private JPanel createPlaceholderPanel(String text) {
+        // Create panel
         JPanel panel = new JPanel();
         panel.setPreferredSize(new Dimension(250, 100));
         panel.setBackground(new Color(55, 66, 88));
+
+        // Create and add label
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 20));
         label.setForeground(Color.WHITE);
         panel.add(label);
+
         return panel;
     }
 
-    // Update player information in the UI
+    /**
+     * Update player information in the UI
+     * @param playerName Current player's name
+     * @param cardCount Number of cards in player's hand
+     */
     public void updatePlayerInfo(String playerName, int cardCount) {
         infoPanel.setPlayerName(playerName);
         infoPanel.setCardCount(cardCount);
     }
 
-    // Update round information in the UI
+    /**
+     * Update round information in the UI
+     * @param round Current round number
+     */
     public void updateRound(int round) {
         infoPanel.setRound(round);
+    }
+
+    /**
+     * Listener for Challenge button
+     */
+    private class ChallengeButtonListener implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            handleChallenge();
+        }
+    }
+
+    /**
+     * Listener for Play button
+     */
+    private class PlayButtonListener implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            handlePlayCards();
+        }
+    }
+
+    /**
+     * Listener for New Game button
+     */
+    private class NewGameButtonListener implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            // Show confirmation dialog
+            String message = "Are you sure you want to start a new game?";
+            String title = "New Game";
+            int option = JOptionPane.showConfirmDialog(
+                    GameFrame.this,
+                    message,
+                    title,
+                    JOptionPane.YES_NO_OPTION
+            );
+
+            // If user confirms, start new game
+            if (option == JOptionPane.YES_OPTION) {
+                // Close this window
+                dispose();
+
+                // Show home screen
+                new Home();
+            }
+        }
     }
 }

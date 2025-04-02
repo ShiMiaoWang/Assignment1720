@@ -2,49 +2,66 @@ package gameUI;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  * Dialog for setting up players before the game starts
  */
 public class PlayerSetupDialog extends JDialog {
-    private List<JTextField> playerNameFields;
+    // Input fields for player names
+    private JTextField[] playerNameFields;
+
+    // Number of players selected
     private int numPlayers;
-    private List<String> playerNames;
+
+    // List of final player names
+    private String[] playerNames;
+
+    // Whether dialog was confirmed or canceled
     private boolean confirmed;
 
+    /**
+     * Create a new player setup dialog
+     * @param parent The parent frame
+     * @param minPlayers Minimum number of players
+     * @param maxPlayers Maximum number of players
+     */
     public PlayerSetupDialog(JFrame parent, int minPlayers, int maxPlayers) {
+        // Call parent constructor
         super(parent, "Player Setup", true);
 
-        playerNameFields = new ArrayList<>();
-        playerNames = new ArrayList<>();
+        // Initialize variables
+        playerNames = new String[maxPlayers];
         confirmed = false;
 
-        // Create components for player selection
+        // Create main panel with border spacing
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Player count selection
+        // Create player count selection panel
         JPanel countPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        countPanel.add(new JLabel("Number of Players:"));
+        JLabel countLabel = new JLabel("Number of Players:");
+        countPanel.add(countLabel);
 
+        // Create dropdown with player count options
         Integer[] playerCounts = new Integer[maxPlayers - minPlayers + 1];
         for (int i = 0; i < playerCounts.length; i++) {
             playerCounts[i] = minPlayers + i;
         }
 
-        JComboBox<Integer> playerCountSelector = new JComboBox<>(playerCounts);
+        JComboBox playerCountSelector = new JComboBox(playerCounts);
         countPanel.add(playerCountSelector);
 
+        // Add count panel to main panel
         mainPanel.add(countPanel, BorderLayout.NORTH);
 
-        // Player name fields
-        JPanel namesPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+        // Create panel for player name fields
+        final JPanel namesPanel = new JPanel(new GridLayout(0, 1, 5, 5));
         JScrollPane scrollPane = new JScrollPane(namesPanel);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Buttons
+        // Create buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton okButton = new JButton("Start Game");
         JButton cancelButton = new JButton("Cancel");
@@ -55,25 +72,42 @@ public class PlayerSetupDialog extends JDialog {
 
         // Set initial player count
         numPlayers = minPlayers;
+        playerNameFields = new JTextField[maxPlayers];
         updatePlayerFields(namesPanel);
 
-        // Add event listeners
-        playerCountSelector.addActionListener(e -> {
-            numPlayers = (Integer) playerCountSelector.getSelectedItem();
-            updatePlayerFields(namesPanel);
-            pack();
-        });
+        // Create player count selection handler
+        playerCountSelector.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Get selected count
+                JComboBox source = (JComboBox) e.getSource();
+                Integer selection = (Integer) source.getSelectedItem();
+                numPlayers = selection.intValue();
 
-        okButton.addActionListener(e -> {
-            if (validatePlayerNames()) {
-                confirmed = true;
-                setVisible(false);
+                // Update player name fields
+                updatePlayerFields(namesPanel);
+
+                // Resize dialog to fit content
+                pack();
             }
         });
 
-        cancelButton.addActionListener(e -> {
-            confirmed = false;
-            setVisible(false);
+        // Create OK button handler
+        okButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Validate input
+                if (validatePlayerNames()) {
+                    confirmed = true;
+                    setVisible(false);
+                }
+            }
+        });
+
+        // Create Cancel button handler
+        cancelButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                confirmed = false;
+                setVisible(false);
+            }
         });
 
         // Set dialog properties
@@ -83,33 +117,51 @@ public class PlayerSetupDialog extends JDialog {
         setLocationRelativeTo(parent);
     }
 
+    /**
+     * Update the player name fields based on selected count
+     */
     private void updatePlayerFields(JPanel panel) {
+        // Clear existing fields
         panel.removeAll();
-        playerNameFields.clear();
 
+        // Create fields for each player
         for (int i = 0; i < numPlayers; i++) {
+            // Create panel for this player
             JPanel playerPanel = new JPanel(new BorderLayout());
-            playerPanel.add(new JLabel("Player " + (i + 1) + ":"), BorderLayout.WEST);
 
-            JTextField nameField = new JTextField(15);
-            nameField.setText("Player " + (i + 1));
-            playerNameFields.add(nameField);
+            // Add label
+            JLabel nameLabel = new JLabel("Player " + (i + 1) + ":");
+            playerPanel.add(nameLabel, BorderLayout.WEST);
 
-            playerPanel.add(nameField, BorderLayout.CENTER);
+            // Create text field if needed
+            if (playerNameFields[i] == null) {
+                playerNameFields[i] = new JTextField(15);
+                playerNameFields[i].setText("Player " + (i + 1));
+            }
+
+            // Add text field
+            playerPanel.add(playerNameFields[i], BorderLayout.CENTER);
+
+            // Add to main panel
             panel.add(playerPanel);
         }
 
+        // Refresh the panel
         panel.revalidate();
         panel.repaint();
     }
 
+    /**
+     * Validate player names and store them
+     * @return true if all names are valid, false otherwise
+     */
     private boolean validatePlayerNames() {
-        playerNames.clear();
+        // Check each name field
+        for (int i = 0; i < numPlayers; i++) {
+            String name = playerNameFields[i].getText().trim();
 
-        for (JTextField field : playerNameFields) {
-            String name = field.getText().trim();
-
-            if (name.isEmpty()) {
+            // Check if name is empty
+            if (name.length() == 0) {
                 JOptionPane.showMessageDialog(this,
                         "Player names cannot be empty",
                         "Validation Error",
@@ -117,20 +169,39 @@ public class PlayerSetupDialog extends JDialog {
                 return false;
             }
 
-            playerNames.add(name);
+            // Add valid name to list
+            playerNames[i] = name;
         }
 
+        // All names are valid
         return true;
     }
 
+    /**
+     * Check if dialog was confirmed
+     */
     public boolean isConfirmed() {
         return confirmed;
     }
 
-    public List<String> getPlayerNames() {
-        return playerNames;
+    /**
+     * Get the player names entered
+     */
+    public String[] getPlayerNames() {
+        // Create array of exact size needed
+        String[] result = new String[numPlayers];
+
+        // Copy names
+        for (int i = 0; i < numPlayers; i++) {
+            result[i] = playerNames[i];
+        }
+
+        return result;
     }
 
+    /**
+     * Get the selected player count
+     */
     public int getPlayerCount() {
         return numPlayers;
     }

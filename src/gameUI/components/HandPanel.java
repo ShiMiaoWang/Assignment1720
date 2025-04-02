@@ -4,129 +4,298 @@ import model.Card;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
+/**
+ * Panel that displays a player's hand of cards
+ */
 public class HandPanel extends JPanel {
 
-    private ArrayList<CardComponent> cardComponents;
-    private Map<CardComponent, Card> componentToCardMap;
+    // Array of card components in the hand
+    private CardComponent[] cardComponents;
+    private int componentCount;
 
-    public HandPanel(List<Card> cards, Map<Card.Suit, ImageIcon> suitImages) {
+    // Array to track which component represents which model card
+    private Card[] modelCards;
+
+    /**
+     * Create a hand panel using cards and suit images
+     *
+     * @param cards      Array of cards in the player's hand
+     * @param suitImages Array of card suit images
+     */
+    public HandPanel(Card[] cards, ImageIcon[] suitImages) {
         // Set layout
         setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
         setOpaque(false);
 
-        cardComponents = new ArrayList<>();
-        componentToCardMap = new HashMap<>();
+        // Get number of cards
+        int cardCount = cards.length;
 
-        // Create all card components
-        for (Card card : cards) {
-            ImageIcon suitIcon = suitImages.get(card.getSuit());
+        // Initialize arrays
+        cardComponents = new CardComponent[cardCount];
+        modelCards = new Card[cardCount];
+        componentCount = cardCount;
+
+        // Create a component for each card
+        for (int i = 0; i < cardCount; i++) {
+            Card card = cards[i];
+
+            // Get the image for this card's suit
+            ImageIcon suitIcon = getSuitImageForCard(card, suitImages);
+
+            // Create a card component
             CardComponent cardComponent = new CardComponent(suitIcon, card);
-            cardComponents.add(cardComponent);
-            componentToCardMap.put(cardComponent, card);
+
+            // Add to our arrays
+            cardComponents[i] = cardComponent;
+            modelCards[i] = card;
+
+            // Add to the panel
             add(cardComponent);
         }
     }
 
-    // Alternative constructor that takes ImageIcons directly (for backward compatibility)
-    public HandPanel(List<ImageIcon> cardIcons) {
+    /**
+     * Get the right suit image for a card
+     */
+    private ImageIcon getSuitImageForCard(Card card, ImageIcon[] suitImages) {
+        // Get the suit of this card
+        Card.Suit cardSuit = card.getSuit();
+
+        // Find the right image
+        if (cardSuit == Card.Suit.COINS) {
+            return suitImages[0];
+        } else if (cardSuit == Card.Suit.CHALICES) {
+            return suitImages[1];
+        } else if (cardSuit == Card.Suit.SWORDS) {
+            return suitImages[2];
+        } else { // WANDS
+            return suitImages[3];
+        }
+    }
+
+    /**
+     * Alternative constructor using just card icons
+     *
+     * @param cardIcons Array of card icons
+     */
+    public HandPanel(ImageIcon[] cardIcons) {
         // Set layout
         setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
         setOpaque(false);
 
-        cardComponents = new ArrayList<>();
-        componentToCardMap = new HashMap<>();
+        // Get number of cards
+        int cardCount = cardIcons.length;
 
-        // Create all card components
-        for (ImageIcon icon : cardIcons) {
-            CardComponent card = new CardComponent(icon, null); // No model card reference
-            cardComponents.add(card);
-            add(card);
+        // Initialize arrays
+        cardComponents = new CardComponent[cardCount];
+        modelCards = new Card[cardCount];
+        componentCount = cardCount;
+
+        // Create a component for each icon
+        for (int i = 0; i < cardCount; i++) {
+            ImageIcon icon = cardIcons[i];
+
+            // Create a card component (no model reference)
+            CardComponent cardComponent = new CardComponent(icon, null);
+
+            // Add to our list
+            cardComponents[i] = cardComponent;
+
+            // Add to the panel
+            add(cardComponent);
         }
     }
 
-    // Get selected cards
-    public List<CardComponent> getSelectedCards() {
-        List<CardComponent> selected = new ArrayList<>();
-        for (CardComponent card : cardComponents) {
-            if (card.isSelected()) {
-                selected.add(card);
+    /**
+     * Get array of currently selected card components
+     *
+     * @return Array of selected card components
+     */
+    public CardComponent[] getSelectedCards() {
+        // First count how many cards are selected
+        int selectedCount = 0;
+        for (int i = 0; i < componentCount; i++) {
+            if (cardComponents[i].isSelected()) {
+                selectedCount++;
             }
         }
+
+        // Create array of exactly the right size
+        CardComponent[] selected = new CardComponent[selectedCount];
+
+        // Fill array with selected components
+        int selectedIndex = 0;
+        for (int i = 0; i < componentCount; i++) {
+            CardComponent card = cardComponents[i];
+            if (card.isSelected()) {
+                selected[selectedIndex] = card;
+                selectedIndex++;
+            }
+        }
+
         return selected;
     }
 
-    // Get selected model cards
-    public List<Card> getSelectedModelCards() {
-        List<Card> selectedCards = new ArrayList<>();
-        for (CardComponent component : getSelectedCards()) {
-            Card modelCard = componentToCardMap.get(component);
-            if (modelCard != null) {
-                selectedCards.add(modelCard);
+    /**
+     * Get array of model cards that are currently selected
+     *
+     * @return Array of selected model cards
+     */
+    public Card[] getSelectedModelCards() {
+        // Get all selected card components
+        CardComponent[] selectedComponents = getSelectedCards();
+        int selectedCount = selectedComponents.length;
+
+        // Create array for model cards
+        Card[] selectedCards = new Card[selectedCount];
+
+        // For each selected component, get the corresponding model card
+        for (int i = 0; i < selectedCount; i++) {
+            CardComponent component = selectedComponents[i];
+
+            // Find this component in our array
+            for (int j = 0; j < componentCount; j++) {
+                if (cardComponents[j] == component) {
+                    // Found it - add the model card
+                    selectedCards[i] = modelCards[j];
+                    break;
+                }
             }
         }
+
         return selectedCards;
     }
 
-    // Remove cards
-    public void removeCards(List<CardComponent> toRemove) {
-        for (CardComponent card : toRemove) {
-            cardComponents.remove(card);
-            componentToCardMap.remove(card);
-            remove(card);
+    /**
+     * Remove cards from the hand panel
+     *
+     * @param toRemove Array of card components to remove
+     */
+    public void removeCards(CardComponent[] toRemove) {
+        // Create new arrays of the right size
+        int newCount = componentCount - toRemove.length;
+        CardComponent[] newComponents = new CardComponent[newCount];
+        Card[] newModelCards = new Card[newCount];
+
+        // Copy only the cards we're keeping
+        int newIndex = 0;
+        for (int i = 0; i < componentCount; i++) {
+            CardComponent current = cardComponents[i];
+
+            // Check if this card should be removed
+            boolean shouldRemove = false;
+            for (int j = 0; j < toRemove.length; j++) {
+                if (current == toRemove[j]) {
+                    shouldRemove = true;
+                    break;
+                }
+            }
+
+            // If it shouldn't be removed, copy it
+            if (!shouldRemove) {
+                newComponents[newIndex] = current;
+                newModelCards[newIndex] = modelCards[i];
+                newIndex++;
+            } else {
+                // Remove from the panel
+                remove(current);
+            }
         }
+
+        // Update our arrays
+        cardComponents = newComponents;
+        modelCards = newModelCards;
+        componentCount = newCount;
+
+        // Refresh the panel
         revalidate();
         repaint();
     }
 
-    // Update hand with new cards
-    public void updateCards(List<Card> cards, Map<Card.Suit, ImageIcon> suitImages) {
+    /**
+     * Update hand with new cards
+     *
+     * @param cards      New array of cards
+     * @param suitImages Array of card suit images
+     */
+    public void updateCards(Card[] cards, ImageIcon[] suitImages) {
         // Clear existing cards
         removeAll();
-        cardComponents.clear();
-        componentToCardMap.clear();
 
-        // Add new cards
-        for (Card card : cards) {
-            ImageIcon suitIcon = suitImages.get(card.getSuit());
+        // Get new count
+        int newCount = cards.length;
+
+        // Create new arrays
+        cardComponents = new CardComponent[newCount];
+        modelCards = new Card[newCount];
+        componentCount = newCount;
+
+        // Add each new card
+        for (int i = 0; i < newCount; i++) {
+            Card card = cards[i];
+
+            // Get the image for this card's suit
+            ImageIcon suitIcon = getSuitImageForCard(card, suitImages);
+
+            // Create a card component
             CardComponent cardComponent = new CardComponent(suitIcon, card);
-            cardComponents.add(cardComponent);
-            componentToCardMap.put(cardComponent, card);
+
+            // Add to our arrays
+            cardComponents[i] = cardComponent;
+            modelCards[i] = card;
+
+            // Add to the panel
             add(cardComponent);
         }
 
         // Log debug info
-        System.out.println("HandPanel updated: " + cards.size() + " cards");
+        System.out.println("HandPanel updated: " + newCount + " cards");
 
+        // Refresh the panel
         revalidate();
         repaint();
     }
 
-    // Verify card mappings match player's actual hand
-    public boolean verifyCardMappings(List<Card> playerHand) {
+    /**
+     * Verify card mappings match player's actual hand
+     *
+     * @param playerHand The player's hand of cards
+     * @return true if mappings are valid, false otherwise
+     */
+    public boolean verifyCardMappings(Card[] playerHand) {
         // Check if all components have valid card mappings
-        for (CardComponent component : cardComponents) {
-            Card modelCard = componentToCardMap.get(component);
+        for (int i = 0; i < componentCount; i++) {
+            Card modelCard = modelCards[i];
+
+            // Check if model card is null
             if (modelCard == null) {
                 System.out.println("Warning: Component found without model card mapping");
                 return false;
             }
 
-            if (!playerHand.contains(modelCard)) {
+            // Check if model card is in player's hand
+            boolean cardInHand = false;
+            for (int j = 0; j < playerHand.length; j++) {
+                if (playerHand[j].equals(modelCard)) {
+                    cardInHand = true;
+                    break;
+                }
+            }
+
+            if (!cardInHand) {
                 System.out.println("Warning: Component maps to card not in player's hand");
                 return false;
             }
         }
 
         // Check if all player cards have corresponding components
-        for (Card card : playerHand) {
+        for (int i = 0; i < playerHand.length; i++) {
+            Card card = playerHand[i];
+
             boolean found = false;
-            for (CardComponent component : cardComponents) {
-                if (card.equals(componentToCardMap.get(component))) {
+            for (int j = 0; j < componentCount; j++) {
+                if (card.equals(modelCards[j])) {
                     found = true;
                     break;
                 }
@@ -138,6 +307,7 @@ public class HandPanel extends JPanel {
             }
         }
 
+        // All checks passed
         return true;
     }
 }

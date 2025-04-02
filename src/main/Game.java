@@ -6,22 +6,32 @@ import gameUI.Home;
 import model.Manager;
 import model.Player;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Main game class that connects the model and UI
+ */
 public class Game {
     private Manager gameManager;
     private GameFrame gameFrame;
-    private List<Player> players;
+    private Player[] players;
 
-    public Game(List<String> playerNames) {
-        // Initialize players
-        players = new ArrayList<>();
-        for (String name : playerNames) {
-            players.add(new Player(name));
+    /**
+     * Create a new game with the specified players
+     * @param playerNames Array of player names
+     */
+    public Game(String[] playerNames) {
+        // Get number of players
+        int playerCount = playerNames.length;
+
+        // Initialize players array
+        players = new Player[playerCount];
+
+        // Create a Player object for each name
+        for (int i = 0; i < playerCount; i++) {
+            String name = playerNames[i];
+            players[i] = new Player(name);
         }
 
-        // Create game manager
+        // Create game manager with players
         gameManager = new Manager(players);
 
         // Create game interface and pass manager
@@ -29,10 +39,11 @@ public class Game {
 
         // Continue playing background music, start if not already playing
         try {
-            AudioManager.getInstance().playBackgroundMusic("/audio/background_music.wav");
-            AudioManager.getInstance().setVolume(0.05f); // Set volume to 5%
+            AudioManager audioManager = AudioManager.getInstance();
+            audioManager.playBackgroundMusic("/audio/background_music.wav");
+            audioManager.setVolume(0.05f); // Set volume to 5%
         } catch (Exception e) {
-            System.err.println("Failed to play background music: " + e.getMessage());
+            System.out.println("Failed to play background music: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -40,21 +51,35 @@ public class Game {
         updateUI();
     }
 
-    // Update UI display
+    /**
+     * Update UI display with current game state
+     */
     private void updateUI() {
-        // Set current player information
+        // Get current player
         Player currentPlayer = gameManager.getCurrentPlayer();
-        gameFrame.updatePlayerInfo(currentPlayer.getName(), currentPlayer.getHand().size());
 
-        // Set current round information
+        // Update player information
+        gameFrame.updatePlayerInfo(
+                currentPlayer.getName(),
+                currentPlayer.getCardCount()
+        );
+
+        // Update round information
         gameFrame.updateRound(gameManager.getRoundNumber());
     }
 
-    // Start a new game with specified player names
-    public static void startNewGame(List<String> playerNames) {
+    /**
+     * Start a new game with specified player names
+     * @param playerNames Array of player names
+     */
+    public static void startNewGame(String[] playerNames) {
         new Game(playerNames);
     }
 
+    /**
+     * Program entry point
+     * @param args Command line arguments (not used)
+     */
     public static void main(String[] args) {
         // Show home page
         new Home();

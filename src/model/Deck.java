@@ -1,57 +1,104 @@
 package model;
 
-import java.util.ArrayList;
-import java.util.Collections;
-
 /**
  * Manages the deck of cards in the Super Madiao game
  */
 public class Deck {
 
-	// Store all cards
-	private ArrayList<Card> cards;
+	// Store all cards in the deck (maximum 24 cards: 4 suits × 6 ranks)
+	private Card[] cards;
+	private int cardCount;
 
 	/**
-	 * Create and shuffle a new deck
+	 * Create and shuffle a new deck with all cards
 	 */
 	public Deck() {
-		cards = new ArrayList<>();
+		// Create array to hold all cards (4 suits × 6 ranks = 24 cards)
+		cards = new Card[24];
+		cardCount = 0;
 
-		// Add all cards
-		for (Card.Suit suit : Card.Suit.values()) {
-			cards.add(new Card(suit, Card.Rank.ONE));
-			cards.add(new Card(suit, Card.Rank.TWO));
-			cards.add(new Card(suit, Card.Rank.THREE));
-			cards.add(new Card(suit, Card.Rank.FOUR));
-			cards.add(new Card(suit, Card.Rank.FIVE));
-			cards.add(new Card(suit, Card.Rank.SIX));
-		}
+		// Create all ranks for COINS
+		cards[cardCount++] = new Card(Card.Suit.COINS, Card.Rank.ONE);
+		cards[cardCount++] = new Card(Card.Suit.COINS, Card.Rank.TWO);
+		cards[cardCount++] = new Card(Card.Suit.COINS, Card.Rank.THREE);
+		cards[cardCount++] = new Card(Card.Suit.COINS, Card.Rank.FOUR);
+		cards[cardCount++] = new Card(Card.Suit.COINS, Card.Rank.FIVE);
+		cards[cardCount++] = new Card(Card.Suit.COINS, Card.Rank.SIX);
 
-		// Shuffle
+		// Create all ranks for CHALICES
+		cards[cardCount++] = new Card(Card.Suit.CHALICES, Card.Rank.ONE);
+		cards[cardCount++] = new Card(Card.Suit.CHALICES, Card.Rank.TWO);
+		cards[cardCount++] = new Card(Card.Suit.CHALICES, Card.Rank.THREE);
+		cards[cardCount++] = new Card(Card.Suit.CHALICES, Card.Rank.FOUR);
+		cards[cardCount++] = new Card(Card.Suit.CHALICES, Card.Rank.FIVE);
+		cards[cardCount++] = new Card(Card.Suit.CHALICES, Card.Rank.SIX);
+
+		// Create all ranks for WANDS
+		cards[cardCount++] = new Card(Card.Suit.WANDS, Card.Rank.ONE);
+		cards[cardCount++] = new Card(Card.Suit.WANDS, Card.Rank.TWO);
+		cards[cardCount++] = new Card(Card.Suit.WANDS, Card.Rank.THREE);
+		cards[cardCount++] = new Card(Card.Suit.WANDS, Card.Rank.FOUR);
+		cards[cardCount++] = new Card(Card.Suit.WANDS, Card.Rank.FIVE);
+		cards[cardCount++] = new Card(Card.Suit.WANDS, Card.Rank.SIX);
+
+		// Create all ranks for SWORDS
+		cards[cardCount++] = new Card(Card.Suit.SWORDS, Card.Rank.ONE);
+		cards[cardCount++] = new Card(Card.Suit.SWORDS, Card.Rank.TWO);
+		cards[cardCount++] = new Card(Card.Suit.SWORDS, Card.Rank.THREE);
+		cards[cardCount++] = new Card(Card.Suit.SWORDS, Card.Rank.FOUR);
+		cards[cardCount++] = new Card(Card.Suit.SWORDS, Card.Rank.FIVE);
+		cards[cardCount++] = new Card(Card.Suit.SWORDS, Card.Rank.SIX);
+
+		// Shuffle the cards
 		shuffle();
 	}
 
 	/**
-	 * Shuffle the deck
+	 * Shuffle the deck (randomize card order)
 	 */
 	public void shuffle() {
-		Collections.shuffle(cards);
+		// Shuffle by swapping pairs of cards many times
+		for (int i = 0; i < 100; i++) {
+			// Pick two random positions
+			int pos1 = (int) (Math.random() * cardCount);
+			int pos2 = (int) (Math.random() * cardCount);
+
+			// Swap the cards at these positions
+			Card temp = cards[pos1];
+			cards[pos1] = cards[pos2];
+			cards[pos2] = temp;
+		}
 	}
 
 	/**
-	 * Draw a card
+	 * Draw a card from the top of the deck
+	 * @return The top card, or null if deck is empty
 	 */
 	public Card draw() {
-		if (!cards.isEmpty()) {
-			return cards.remove(0);
+		// Check if there are any cards left
+		if (cardCount <= 0) {
+			return null;
 		}
-		return null;
+
+		// Get the top card
+		Card topCard = cards[0];
+
+		// Shift all other cards one position forward
+		for (int i = 0; i < cardCount - 1; i++) {
+			cards[i] = cards[i + 1];
+		}
+
+		// Decrease card count
+		cardCount--;
+
+		// Return the top card
+		return topCard;
 	}
 
 	/**
-	 * Get remaining card count
+	 * Get the number of cards left in the deck
 	 */
 	public int size() {
-		return cards.size();
+		return cardCount;
 	}
 }
