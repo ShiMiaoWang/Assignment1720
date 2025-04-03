@@ -36,5 +36,5 @@ The project is organized into different packages
 * Music was taken from: 
 
 ## Team Members
-* Shimao Wang: 
+* Shimao Wang: 216814576
 * Filza Ahmed: 219360817
