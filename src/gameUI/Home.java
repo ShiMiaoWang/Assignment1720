@@ -77,14 +77,15 @@ public class Home extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				// Show help message dialog
 				String helpMessage = "Super Madiao Game Rules:\n\n"
+						+ "The objective of the game is to be the first player to get rid of all your cards.\n\n"
 						+ "1. Each player takes turns playing cards and declaring points.\n\n"
 						+ "2. On your turn, you can:\n"
 						+ "   - Play 1-4 cards and declare their points (can be true or false)\n"
-						+ "   - Challenge the previous player's declaration\n\n"
+						+ "   - Challenge the previous player's declaration, if you think they are lying\n\n"
 						+ "3. If a player is challenged:\n"
-						+ "   - If the declaration is false, the challenged player takes all cards from the pile\n"
-						+ "   - If the declaration is true, the challenger takes all cards from the pile\n\n"
-						+ "4. The player who takes cards goes next\n\n"
+						+ "   - If they were caught lying, the challenged player takes all cards from the pile\n"
+						+ "   - If they were telling the truth, the challenger takes all cards from the pile\n\n"
+						+ "4. The player who picks up the cards will begin the next round\n\n"
 						+ "5. The first player to empty their hand wins!";
 				JOptionPane.showMessageDialog(Home.this, helpMessage, "Game Help", JOptionPane.INFORMATION_MESSAGE);
 			}
