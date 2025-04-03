@@ -33,7 +33,7 @@ The project is organized into different packages
 * audio: Sound management
 
 ## References
-* Music was taken from: 
+* Music was taken from: https://www.douyin.com/user/MS4wLjABAAAA2r2wFSGD2OkzXWXihqVofPkJm7p_RS5-a3jEf_OZUas/search/better%20boogie%20now?aid=a2a6d28a-3dd7-43b4-bf94-6baca5a12a38&modal_id=7131249200485993739&type=general
 
 ## Team Members
 * Shimao Wang: 216814576
