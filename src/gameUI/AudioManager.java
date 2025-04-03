@@ -17,14 +17,12 @@ public class AudioManager {
     private FloatControl volumeControl;
 
     // Audio state
-    private boolean isMuted;
     private float volume;
 
     // Private constructor (for singleton pattern)
     private AudioManager() {
-        // Initialize default values
-        this.isMuted = false;
-        this.volume = 0.4f; // Default volume is 40%
+        // Initialize default value
+        this.volume = 0.05f; // Default volume is 5%
     }
 
     /**
@@ -57,12 +55,6 @@ public class AudioManager {
             // Load audio file
             InputStream audioSrc = getClass().getResourceAsStream(resourcePath);
 
-            // Check if file exists
-            if (audioSrc == null) {
-                System.out.println("Cannot find audio file: " + resourcePath);
-                return;
-            }
-
             // Create buffered input stream for better performance
             InputStream bufferedIn = new BufferedInputStream(audioSrc);
 
@@ -74,8 +66,7 @@ public class AudioManager {
             backgroundMusic.open(audioInputStream);
 
             // Set volume if control is supported
-            boolean hasVolumeControl = backgroundMusic.isControlSupported(FloatControl.Type.MASTER_GAIN);
-            if (hasVolumeControl) {
+            if (backgroundMusic.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
                 volumeControl = (FloatControl) backgroundMusic.getControl(FloatControl.Type.MASTER_GAIN);
                 setVolume(volume);
             }
@@ -83,14 +74,11 @@ public class AudioManager {
             // Loop playback forever
             backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY);
 
-            // Start playback if not muted
-            if (!isMuted) {
-                backgroundMusic.start();
-            }
+            // Start playback
+            backgroundMusic.start();
         } catch (Exception e) {
             // Print error message if anything goes wrong
             System.out.println("Error playing background music: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 
@@ -99,17 +87,6 @@ public class AudioManager {
      * @param volume Volume value, 0.0 (mute) to 1.0 (maximum volume)
      */
     public void setVolume(float volume) {
-        // Check if volume is in valid range
-        if (volume < 0.0f) {
-            System.out.println("Volume too low, setting to 0.0");
-            volume = 0.0f;
-        }
-
-        if (volume > 1.0f) {
-            System.out.println("Volume too high, setting to 1.0");
-            volume = 1.0f;
-        }
-
         // Save the volume value
         this.volume = volume;
 
@@ -127,59 +104,15 @@ public class AudioManager {
             }
 
             // Ensure within control range
-            float minGain = volumeControl.getMinimum();
-            float maxGain = volumeControl.getMaximum();
-
-            if (gain < minGain) {
-                gain = minGain;
+            if (gain < volumeControl.getMinimum()) {
+                gain = volumeControl.getMinimum();
             }
-
-            if (gain > maxGain) {
-                gain = maxGain;
+            if (gain > volumeControl.getMaximum()) {
+                gain = volumeControl.getMaximum();
             }
 
             // Apply the volume
             volumeControl.setValue(gain);
-        }
-    }
-
-    /**
-     * Gets current volume
-     */
-    public float getVolume() {
-        return volume;
-    }
-
-    /**
-     * Mute or unmute
-     * @param mute Whether to mute
-     */
-    public void setMuted(boolean mute) {
-        this.isMuted = mute;
-
-        // Apply mute setting if music is playing
-        if (backgroundMusic != null) {
-            if (backgroundMusic.isOpen()) {
-                if (mute) {
-                    // Stop playback if muted
-                    backgroundMusic.stop();
-                } else {
-                    // Resume playback if unmuted
-                    backgroundMusic.start();
-                }
-            }
-        }
-    }
-
-    /**
-     * Stops background music and releases resources
-     */
-    public void stopBackgroundMusic() {
-        if (backgroundMusic != null) {
-            if (backgroundMusic.isOpen()) {
-                backgroundMusic.stop();
-                backgroundMusic.close();
-            }
         }
     }
 }
